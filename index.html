@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tidal Orchestra Generator</title>
+    <style>
+        body {
+            background-color: #0a192f;
+            color: #e6f1ff;
+            font-family: 'Courier New', Courier, monospace;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+            overflow: hidden;
+        }
+        h1 {
+            font-weight: normal;
+            letter-spacing: 2px;
+            margin-bottom: 10px;
+        }
+        p {
+            opacity: 0.7;
+            margin-bottom: 40px;
+            max-width: 600px;
+            text-align: center;
+            line-height: 1.5;
+        }
+        #orchestra {
+            display: flex;
+            gap: 15px;
+            padding: 40px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+        .musician {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            border: 2px solid #64ffda;
+            opacity: 0.2;
+            transition: opacity 0.5s, transform 0.5s, box-shadow 0.5s;
+            position: relative;
+        }
+        .musician.playing {
+            opacity: 1;
+            transform: scale(1.1);
+            box-shadow: 0 0 20px #64ffda;
+        }
+        button {
+            padding: 15px 30px;
+            font-size: 16px;
+            background: transparent;
+            color: #64ffda;
+            border: 2px solid #64ffda;
+            border-radius: 4px;
+            cursor: pointer;
+            font-family: inherit;
+            transition: all 0.3s;
+        }
+        button:hover {
+            background: rgba(100, 255, 218, 0.1);
+        }
+        .controls {
+            margin-top: 30px;
+            display: flex;
+            gap: 20px;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>(OCEAN) BLOOM GENERATOR</h1>
+    <p>
+        An aleatoric music experiment based on the "Tidal Orchestra" technique.
+        Musicians listen to their neighbors and play only when space allows, creating a natural, breathing soundscape.
+    </p>
+
+    <div id="orchestra"></div>
+
+    <div class="controls">
+        <button id="startBtn">Initialize Orchestra</button>
+        <button id="stopBtn" style="display:none; border-color: #ff6b6b; color: #ff6b6b;">Stop</button>
+        <div style="display: flex; align-items: center; gap: 10px;">
+            <label style="color: #64ffda; font-size: 14px;">Mode:</label>
+            <select id="modeSelect" style="background: transparent; color: #64ffda; border: 1px solid #64ffda; padding: 5px; border-radius: 4px;">
+                <option value="tone">Swelling Tones</option>
+                <option value="melody">Short Melodies</option>
+            </select>
+        </div>
+    </div>
+
+    <script>
+        // --- Configuration ---
+        const MUSICIAN_COUNT = 8;
+        const SCALE = [
+            196.00, // G3
+            220.00, // A3
+            246.94, // B3
+            293.66, // D4
+            329.63, // E4
+            392.00, // G4
+            440.00, // A4
+            493.88, // B4
+            587.33, // D5
+            659.25  // E5
+        ]; // G Major Pentatonic / ish
+
+        // Motifs defined as indices into SCALE. 
+        // d: duration in seconds relative to a base tempo
+        const MOTIFS = [
+            [{n: 0, d: 0.5}, {n: 2, d: 0.5}, {n: 4, d: 2.0}],   // Ascending triad
+            [{n: 5, d: 0.5}, {n: 3, d: 0.5}, {n: 1, d: 2.0}],   // Descending
+            [{n: 2, d: 0.5}, {n: 4, d: 0.5}, {n: 2, d: 2.0}],   // Neighbor tone
+            [{n: 1, d: 1.0}, {n: 2, d: 1.0}],                   // Simple step
+            [{n: 0, d: 0.25}, {n: 1, d: 0.25}, {n: 2, d: 0.25}, {n: 3, d: 2.25}], // Run
+            [{n: 4, d: 1.0}, {n: 7, d: 2.0}],                   // Octave leap-ish
+            [{n: 3, d: 0.5}, {n: 3, d: 0.5}, {n: 3, d: 2.0}],   // Repeated note
+        ];
+
+        let audioCtx;
+        let musicians = [];
+        let isRunning = false;
+        let currentMode = 'tone';
+
+        class Musician {
+            constructor(id, freq) {
+                this.id = id;
+                this.baseFreq = freq;
+                this.isPlaying = false;
+                this.element = document.createElement('div');
+                this.element.className = 'musician';
+                document.getElementById('orchestra').appendChild(this.element);
+                
+                this.activeNodes = []; 
+                this.timer = null;
+            }
+
+            // Check neighbors and decide whether to play
+            decide(neighbors) {
+                if (this.isPlaying || !isRunning) return;
+
+                // "Play notes only when the person next to them was not playing"
+                const left = neighbors[this.id - 1];
+                const right = neighbors[this.id + 1];
+
+                const leftSilent = !left || !left.isPlaying;
+                const rightSilent = !right || !right.isPlaying;
+
+                if (leftSilent && rightSilent) {
+                    // Chance to start playing if space is clear
+                    // Melody mode might be slightly busier or sparser depending on taste
+                    if (Math.random() < 0.02) { 
+                        this.play();
+                    }
+                }
+            }
+
+            stopAll() {
+                this.activeNodes.forEach(node => node.stop());
+                this.activeNodes = [];
+                if (this.timer) clearTimeout(this.timer);
+                this.finish();
+            }
+
+            play() {
+                if (!audioCtx || !isRunning) return;
+                
+                this.isPlaying = true;
+                this.element.classList.add('playing');
+
+                if (currentMode === 'melody') {
+                    this.playMelody();
+                } else {
+                    this.playTone();
+                }
+            }
+
+            playTone() {
+                const t = audioCtx.currentTime;
+                const duration = 4 + Math.random() * 6; // Long, swelling notes (4-10s)
+                
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                
+                osc.type = 'sine';
+                const detune = (Math.random() - 0.5) * 10;
+                osc.frequency.setValueAtTime(this.baseFreq, t);
+                osc.detune.setValueAtTime(detune, t);
+
+                gain.gain.setValueAtTime(0, t);
+                
+                // Slow attack and release for "swelling"
+                const attackTime = duration * 0.4;
+                gain.gain.linearRampToValueAtTime(0.15, t + attackTime);
+                gain.gain.linearRampToValueAtTime(0, t + duration);
+
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+
+                osc.start(t);
+                osc.stop(t + duration);
+
+                this.activeNodes.push({ stop: () => {
+                    try { osc.stop(); osc.disconnect(); gain.disconnect(); } catch(e){}
+                }});
+
+                // Cleanup
+                this.timer = setTimeout(() => {
+                    this.finish();
+                }, duration * 1000);
+            }
+
+            playMelody() {
+                const t = audioCtx.currentTime;
+                // Pick a random motif
+                const motif = MOTIFS[Math.floor(Math.random() * MOTIFS.length)];
+                
+                // Transpose
+                const shift = Math.floor(Math.random() * 3); 
+
+                let totalDuration = 0;
+                
+                motif.forEach((noteDef, index) => {
+                    const noteIndex = (noteDef.n + shift) % SCALE.length;
+                    const freq = SCALE[noteIndex];
+                    const noteStart = t + totalDuration;
+                    const noteDur = noteDef.d;
+
+                    const osc = audioCtx.createOscillator();
+                    const gain = audioCtx.createGain();
+                    
+                    osc.type = 'sine'; // or 'triangle' for more melody presence
+                    osc.frequency.setValueAtTime(freq, noteStart);
+                    
+                    // Envelope for melody notes (faster attack than drone)
+                    gain.gain.setValueAtTime(0, noteStart);
+                    gain.gain.linearRampToValueAtTime(0.15, noteStart + 0.1);
+                    gain.gain.linearRampToValueAtTime(0, noteStart + noteDur - 0.05);
+                    
+                    osc.connect(gain);
+                    gain.connect(audioCtx.destination);
+                    
+                    osc.start(noteStart);
+                    osc.stop(noteStart + noteDur);
+
+                    this.activeNodes.push({ stop: () => {
+                         try { osc.stop(); osc.disconnect(); gain.disconnect(); } catch(e){}
+                    }});
+
+                    totalDuration += noteDur;
+                });
+
+                // Cleanup
+                this.timer = setTimeout(() => {
+                    this.finish();
+                }, totalDuration * 1000);
+            }
+
+            finish() {
+                this.isPlaying = false;
+                this.element.classList.remove('playing');
+                this.activeNodes = [];
+                this.timer = null;
+            }
+        }
+
+        function init() {
+            if (audioCtx) return;
+            const AudioContext = window.AudioContext || window.webkitAudioContext;
+            audioCtx = new AudioContext();
+            
+            const compressor = audioCtx.createDynamicsCompressor();
+            compressor.connect(audioCtx.destination);
+
+            const container = document.getElementById('orchestra');
+            container.innerHTML = '';
+            musicians = [];
+
+            for (let i = 0; i < MUSICIAN_COUNT; i++) {
+                const note = SCALE[Math.floor(Math.random() * SCALE.length)];
+                musicians.push(new Musician(i, note));
+            }
+
+            isRunning = true;
+            loop();
+        }
+
+        function loop() {
+            if (!isRunning) return;
+
+            musicians.forEach(m => {
+                m.decide(musicians);
+            });
+
+            requestAnimationFrame(loop);
+        }
+
+        document.getElementById('startBtn').addEventListener('click', function() {
+            if (!audioCtx) {
+                init();
+            } else if (!isRunning) {
+                isRunning = true;
+                loop();
+            }
+            
+            this.style.display = 'none';
+            const stopBtn = document.getElementById('stopBtn');
+            stopBtn.style.display = 'inline-block';
+        });
+
+        document.getElementById('stopBtn').addEventListener('click', function() {
+            isRunning = false;
+            musicians.forEach(m => m.stopAll());
+            
+            this.style.display = 'none';
+            const startBtn = document.getElementById('startBtn');
+            startBtn.style.display = 'inline-block';
+            startBtn.textContent = "Resume Orchestra";
+            startBtn.disabled = false;
+            startBtn.style.opacity = 1;
+        });
+
+        document.getElementById('modeSelect').addEventListener('change', function(e) {
+            currentMode = e.target.value;
+        });
+
+    </script>
+</body>
+</html>
+
