@@ -1,8 +1,52 @@
-.controls {
+.controls-wrapper {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 15px;
     margin-top: 30px;
+    width: 100%;
+}
+
+.controls {
     display: flex;
     gap: 20px;
     align-items: center;
+}
+
+.progression-status {
+    text-align: center;
+    padding: 8px 16px;
+    background: rgba(100, 255, 218, 0.1);
+    border-radius: 4px;
+    color: #e6f1ff;
+    font-size: 0.9em;
+    border: 1px solid rgba(100, 255, 218, 0.2);
+    min-width: 200px;
+    /* Ensure layout stability */
+    height: 2.5em;
+    box-sizing: border-box;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s ease;
+}
+
+.progression-status.inactive {
+    background: transparent;
+    border-color: transparent;
+    opacity: 0.5; /* Optional: keeps it faintly visible or use 0 for fully invisible */
+    opacity: 0;
+    pointer-events: none;
+}
+
+.progression-status .label {
+    opacity: 0.7;
+    margin-right: 8px;
+}
+
+.progression-status .chord {
+    color: #64ffda;
+    font-weight: bold;
 }
 
 button {
@@ -24,10 +68,11 @@ button:hover {
 .btn-stop {
     border-color: #ff6b6b;
     color: #ff6b6b;
+    background: rgba(255, 107, 107, 0.05);
 }
 
 .btn-stop:hover {
-    background: rgba(255, 107, 107, 0.1);
+    background: rgba(255, 107, 107, 0.15);
 }
 
 .mode-select-container {
@@ -55,3 +100,14 @@ select option {
     color: #e6f1ff;
 }
 
+@media (max-width: 480px) {
+    button {
+        padding: 12px 24px;
+        font-size: 14px;
+    }
+    
+    .progression-status {
+        min-width: 150px;
+        font-size: 0.8em;
+    }
+}

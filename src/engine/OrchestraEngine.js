@@ -1,16 +1,107 @@
-// G Major Pentatonic / ish
-export const SCALE = [
-    196.00, // G3
-    220.00, // A3
-    246.94, // B3
-    293.66, // D4
-    329.63, // E4
-    392.00, // G4
-    440.00, // A4
-    493.88, // B4
-    587.33, // D5
-    659.25  // E5
-];
+export const ROOTS = {
+    'C': 261.63,
+    'D': 293.66,
+    'E': 329.63,
+    'F': 349.23,
+    'G': 392.00,
+    'A': 440.00,
+    'B': 493.88
+};
+
+export const MODES = {
+    'major_pentatonic': {
+        name: 'Major Pentatonic',
+        intervals: [0, 2, 4, 7, 9] // Semitones
+    },
+    'minor_pentatonic': {
+        name: 'Minor Pentatonic',
+        intervals: [0, 3, 5, 7, 10]
+    },
+    'whole_tone': {
+        name: 'Whole Tone',
+        intervals: [0, 2, 4, 6, 8, 10]
+    },
+    'lydian': {
+        name: 'Lydian',
+        intervals: [0, 2, 4, 6, 7, 9, 11]
+    },
+    'hirajoshi': {
+        name: 'Hirajoshi',
+        intervals: [0, 2, 3, 7, 8]
+    },
+    'dorian': {
+        name: 'Dorian',
+        intervals: [0, 2, 3, 5, 7, 9, 10]
+    }
+};
+
+// Progression Definitions
+// Steps are relative to the current root
+export const PROGRESSIONS = {
+    'static': {
+        name: 'Static (No Change)',
+        steps: [
+            { rootOffset: 0, mode: 'major_pentatonic', duration: 10 }
+        ]
+    },
+    'emotional_journey': {
+        name: 'Emotional Journey',
+        steps: [
+            { rootOffset: 0, mode: 'major_pentatonic', duration: 15 }, // I
+            { rootOffset: 5, mode: 'major_pentatonic', duration: 15 }, // IV
+            { rootOffset: 7, mode: 'major_pentatonic', duration: 15 }, // V
+            { rootOffset: 0, mode: 'major_pentatonic', duration: 15 }  // I
+        ]
+    },
+    'dark_descent': {
+        name: 'Dark Descent',
+        steps: [
+            { rootOffset: 0, mode: 'minor_pentatonic', duration: 20 }, // i
+            { rootOffset: 3, mode: 'major_pentatonic', duration: 20 }, // III
+            { rootOffset: 7, mode: 'minor_pentatonic', duration: 20 }, // v
+            { rootOffset: 8, mode: 'lydian', duration: 20 }            // VI (Lydian twist)
+        ]
+    },
+    'dream_cycle': {
+        name: 'Dream Cycle',
+        steps: [
+            { rootOffset: 0, mode: 'whole_tone', duration: 20 },
+            { rootOffset: 2, mode: 'lydian', duration: 20 },
+            { rootOffset: 4, mode: 'whole_tone', duration: 20 }
+        ]
+    }
+};
+
+export const DEFAULT_PROGRESSION = 'static';
+
+// Helper to generate frequencies for a scale
+// Spans 2 octaves
+function generateScale(rootFreq, modeKey) {
+    const intervals = MODES[modeKey].intervals;
+    const scale = [];
+    
+    // Base Octave
+    intervals.forEach(semitone => {
+        scale.push(rootFreq * Math.pow(2, semitone / 12));
+    });
+    
+    // Lower Octave (0.5x)
+    intervals.forEach(semitone => {
+        scale.unshift((rootFreq * 0.5) * Math.pow(2, semitone / 12));
+    });
+
+    // Sort just in case
+    return scale.sort((a, b) => a - b);
+}
+
+// Helper: Calculate frequency from root name + semitone offset
+function getFreqFromRootOffset(baseRootName, semitoneOffset) {
+    const baseFreq = ROOTS[baseRootName];
+    return baseFreq * Math.pow(2, semitoneOffset / 12);
+}
+
+export const DEFAULT_ROOT = 'G';
+export const DEFAULT_MODE = 'major_pentatonic';
 
 // Motifs with complexity ratings (0.0 - 1.0)
 // notes: array of {n: scaleIndex, d: duration}
@@ -27,13 +118,14 @@ export const MOTIFS = [
 export class Musician {
     constructor(id, freq, onStateChange) {
         this.id = id;
-        this.baseFreq = freq;
-        this.onStateChange = onStateChange; // Callback to update React state
+        this.baseFreq = freq; // Deprecated: We now look up note from scale dynamically
+        this.onStateChange = onStateChange; 
         this.isPlaying = false;
         this.activeNodes = []; 
         this.timer = null;
         this.audioCtx = null;
     }
+
 
     setContext(ctx) {
         this.audioCtx = ctx;
@@ -86,16 +178,31 @@ export class Musician {
 
     playTone(settings) {
         const t = this.audioCtx.currentTime;
-        // Base duration on setting, add some randomness
         const baseDur = settings.swellDuration;
         const duration = baseDur + Math.random() * (baseDur * 0.5); 
         
+        // Determine scale based on active progression step override or manual settings
+        let rootFreq = ROOTS[settings.root || DEFAULT_ROOT];
+        let modeKey = settings.mode || DEFAULT_MODE;
+
+        if (settings.activeStep) {
+            // activeStep contains: { rootOffset, mode }
+            // We calculate new root based on settings.root + offset
+            rootFreq = getFreqFromRootOffset(settings.root || DEFAULT_ROOT, settings.activeStep.rootOffset);
+            modeKey = settings.activeStep.mode;
+        }
+
+        const notes = generateScale(rootFreq, modeKey);
+
+        // Pick a random note
+        const freq = notes[Math.floor(Math.random() * notes.length)];
+
         const osc = this.audioCtx.createOscillator();
         const gain = this.audioCtx.createGain();
         
         osc.type = 'sine';
         const detune = (Math.random() - 0.5) * 10;
-        osc.frequency.setValueAtTime(this.baseFreq, t);
+        osc.frequency.setValueAtTime(freq, t);
         osc.detune.setValueAtTime(detune, t);
 
         gain.gain.setValueAtTime(0, t);
@@ -121,14 +228,19 @@ export class Musician {
     playMelody(settings) {
         const t = this.audioCtx.currentTime;
         
+        // Determine scale based on active progression step override or manual settings
+        let rootFreq = ROOTS[settings.root || DEFAULT_ROOT];
+        let modeKey = settings.mode || DEFAULT_MODE;
+
+        if (settings.activeStep) {
+            rootFreq = getFreqFromRootOffset(settings.root || DEFAULT_ROOT, settings.activeStep.rootOffset);
+            modeKey = settings.activeStep.mode;
+        }
+
+        const notes = generateScale(rootFreq, modeKey);
+
         // Filter or weight motifs based on complexity
-        // Simple approach: Pick a motif that is "close" to the target complexity
-        // We'll score them by distance to settings.melodyComplexity
-        
         const targetComplexity = settings.melodyComplexity;
-        
-        // Weighted random selection favoring closer complexity
-        // We'll pick 2 random candidates and choose the one closer to target
         const candidate1 = MOTIFS[Math.floor(Math.random() * MOTIFS.length)];
         const candidate2 = MOTIFS[Math.floor(Math.random() * MOTIFS.length)];
         
@@ -143,8 +255,9 @@ export class Musician {
         let totalDuration = 0;
         
         motif.forEach((noteDef) => {
-            const noteIndex = (noteDef.n + shift) % SCALE.length;
-            const freq = SCALE[noteIndex];
+            // Map motif index to current scale
+            const noteIndex = (noteDef.n + shift) % notes.length;
+            const freq = notes[noteIndex];
             const noteStart = t + totalDuration;
             const noteDur = noteDef.d;
 

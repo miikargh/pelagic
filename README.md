@@ -1,4 +1,4 @@
-# Aleatoric Bloom Generator
+# Pelagic
 
 A React-based web app demonstrating the "Tidal Orchestra" aleatoric music technique used by Hans Zimmer and Radiohead for *(ocean) bloom*.
 

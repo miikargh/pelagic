@@ -2,7 +2,9 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Musician } from './components/Musician';
 import { Controls } from './components/Controls';
 import { ChaosPanel } from './components/ChaosPanel';
-import { Musician as MusicianEngine, SCALE } from './engine/OrchestraEngine';
+import { Background } from './components/Background';
+import { Musician as MusicianEngine, DEFAULT_ROOT, DEFAULT_MODE, PROGRESSIONS, DEFAULT_PROGRESSION, ROOTS, MODES } from './engine/OrchestraEngine';
+import { ProgressionManager } from './engine/ProgressionManager';
 
 const MUSICIAN_COUNT = 8;
 
@@ -14,30 +16,44 @@ function App() {
         density: 0.02,
         blend: 0.5,        // 0.0 = Tone, 1.0 = Melody
         swellDuration: 6,  // Seconds
-        melodyComplexity: 0.5
+        melodyComplexity: 0.5,
+        root: DEFAULT_ROOT,
+        mode: DEFAULT_MODE,
+        progression: DEFAULT_PROGRESSION,
+        progressionSpeed: 1.0,
+        activeStep: null // Injected by ProgressionManager
     });
-    
-    // State for visual representation
-    const [musicianStates, setMusicianStates] = useState(
-        Array(MUSICIAN_COUNT).fill(false)
-    );
+
+    const [musicianStates, setMusicianStates] = useState(Array(MUSICIAN_COUNT).fill(false));
+
+    // Visual State for Progression
+    const [currentStepInfo, setCurrentStepInfo] = useState(null);
 
     // Refs for engine
     const musiciansRef = useRef([]);
     const audioCtxRef = useRef(null);
     const loopRef = useRef(null);
+    const progressionManagerRef = useRef(null);
     
     // Ref for settings to access current values in animation loop
     const settingsRef = useRef(settings);
     useEffect(() => {
         settingsRef.current = settings;
+        // Update progression manager if progression key changes
+        if (progressionManagerRef.current) {
+            if (settings.progression) {
+                progressionManagerRef.current.setProgression(settings.progression);
+            }
+            progressionManagerRef.current.setSpeed(settings.progressionSpeed);
+        }
     }, [settings]);
 
     // Initialize engine instances on mount
     useEffect(() => {
         musiciansRef.current = Array(MUSICIAN_COUNT).fill(null).map((_, i) => {
-            const note = SCALE[Math.floor(Math.random() * SCALE.length)];
-            return new MusicianEngine(i, note, (id, isPlaying) => {
+            // Initial note doesn't matter much now as play() picks from current scale
+            // But we keep a dummy value for constructor
+            return new MusicianEngine(i, 440, (id, isPlaying) => {
                 setMusicianStates(prev => {
                     const next = [...prev];
                     next[id] = isPlaying;
@@ -46,10 +62,29 @@ function App() {
             });
         });
 
+        // Initialize Progression Manager
+        progressionManagerRef.current = new ProgressionManager(
+            DEFAULT_PROGRESSION, 
+            (step, index) => {
+                // IMPORTANT: We must use functional state update to ensure we don't stale-close over 'settings'
+                // BUT here we are setting specific fields.
+                // Actually, setSettings accepts prev state.
+                if (step) {
+                    setSettings(prev => ({ ...prev, activeStep: step }));
+                    setCurrentStepInfo({ index, ...step });
+                } else {
+                    setSettings(prev => ({ ...prev, activeStep: null }));
+                    setCurrentStepInfo(null);
+                }
+            },
+            PROGRESSIONS
+        );
+
         return () => {
             if (loopRef.current) cancelAnimationFrame(loopRef.current);
             musiciansRef.current.forEach(m => m.stopAll());
             if (audioCtxRef.current) audioCtxRef.current.close();
+            if (progressionManagerRef.current) progressionManagerRef.current.stop();
         };
     }, []);
 
@@ -69,10 +104,17 @@ function App() {
         }
 
         setIsRunning(true);
+        // progressionManagerRef check is moved to effect or updated there, 
+        // but we should ensure it starts if we are resuming.
+        // The ProgressionManager needs to know if it should run based on isRunning.
+        // Actually, setIsRunning(true) triggers the effect which manages loop and musician stop,
+        // but ProgressionManager is separate. Let's keep it here for now.
+        if (progressionManagerRef.current) progressionManagerRef.current.start();
     };
 
     const stopOrchestra = () => {
         setIsRunning(false);
+        if (progressionManagerRef.current) progressionManagerRef.current.stop();
     };
 
     // The Loop
@@ -109,19 +151,15 @@ function App() {
 
     return (
         <div className="app">
-            <h1>(OCEAN) BLOOM GENERATOR</h1>
+            <Background settings={settings} isRunning={isRunning} />
+            
+            <h1>PELAGIC</h1>
             <p className="description">
                 An aleatoric music experiment based on the "Tidal Orchestra" technique.
                 Musicians listen to their neighbors and play only when space allows, creating a natural, breathing soundscape.
             </p>
 
-            <div id="orchestra" style={{
-                display: 'flex',
-                gap: '15px',
-                padding: '40px',
-                flexWrap: 'wrap',
-                justifyContent: 'center'
-            }}>
+            <div id="orchestra" className="orchestra-container">
                 {musicianStates.map((playing, i) => (
                     <Musician key={i} isPlaying={playing} />
                 ))}
@@ -131,6 +169,7 @@ function App() {
                 isRunning={isRunning}
                 onStart={startOrchestra}
                 onStop={stopOrchestra}
+                currentStepInfo={currentStepInfo}
             />
 
             <ChaosPanel 

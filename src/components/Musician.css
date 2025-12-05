@@ -14,3 +14,9 @@
     box-shadow: 0 0 20px #64ffda;
 }
 
+@media (max-width: 768px) {
+    .musician {
+        width: 45px;
+        height: 45px;
+    }
+}
