@@ -1,0 +1,16 @@
+.musician {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    border: 2px solid #64ffda;
+    opacity: 0.2;
+    transition: opacity 0.5s, transform 0.5s, box-shadow 0.5s;
+    position: relative;
+}
+
+.musician.playing {
+    opacity: 1;
+    transform: scale(1.1);
+    box-shadow: 0 0 20px #64ffda;
+}
+

@@ -1,0 +1,40 @@
+:root {
+  background-color: #0a192f;
+  color: #e6f1ff;
+  font-family: 'Courier New', Courier, monospace;
+}
+
+body {
+  margin: 0;
+  display: flex;
+  place-items: center;
+  min-width: 320px;
+  min-height: 100vh;
+  overflow: hidden;
+}
+
+#root {
+  width: 100%;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+h1 {
+  font-weight: normal;
+  letter-spacing: 2px;
+  margin-bottom: 10px;
+  text-align: center;
+}
+
+p.description {
+  opacity: 0.7;
+  margin-bottom: 40px;
+  max-width: 600px;
+  text-align: center;
+  line-height: 1.5;
+  padding: 0 20px;
+}
+

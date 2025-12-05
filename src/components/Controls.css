@@ -1,0 +1,57 @@
+.controls {
+    margin-top: 30px;
+    display: flex;
+    gap: 20px;
+    align-items: center;
+}
+
+button {
+    padding: 15px 30px;
+    font-size: 16px;
+    background: transparent;
+    color: #64ffda;
+    border: 2px solid #64ffda;
+    border-radius: 4px;
+    cursor: pointer;
+    font-family: inherit;
+    transition: all 0.3s;
+}
+
+button:hover {
+    background: rgba(100, 255, 218, 0.1);
+}
+
+.btn-stop {
+    border-color: #ff6b6b;
+    color: #ff6b6b;
+}
+
+.btn-stop:hover {
+    background: rgba(255, 107, 107, 0.1);
+}
+
+.mode-select-container {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.mode-select-container label {
+    color: #64ffda;
+    font-size: 14px;
+}
+
+select {
+    background: transparent;
+    color: #64ffda;
+    border: 1px solid #64ffda;
+    padding: 5px;
+    border-radius: 4px;
+    font-family: inherit;
+}
+
+select option {
+    background: #0a192f;
+    color: #e6f1ff;
+}
+

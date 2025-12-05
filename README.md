@@ -1,6 +1,6 @@
 # Aleatoric Bloom Generator
 
-A pure frontend implementation of the "Tidal Orchestra" technique used by Hans Zimmer and Radiohead for *(ocean) bloom*.
+A React-based web app demonstrating the "Tidal Orchestra" aleatoric music technique used by Hans Zimmer and Radiohead for *(ocean) bloom*.
 
 ## The Concept
 
@@ -9,18 +9,31 @@ The core rule creates complex, organic patterns:
 
 This creates a natural ebb and flow, preventing all notes from triggering at once and ensuring a breathing, swelling soundscape.
 
-## Modes
+## Chaos Controls
 
-1. **Swelling Tones**: The original behavior. Musicians play single, long, swelling notes that fade in and out.
-2. **Short Melodies**: Musicians play short, predefined motifs from a shared scale (G Major Pentatonic). These motifs are layered using the same "neighbor silence" rule, ensuring they interlock organically without clashing.
+The app features real-time parameter manipulation:
 
-## How to Run
+- **Density**: Controls the probability that a musician will start playing when their space is clear. Low values result in sparse, meditative textures; high values create chaotic, dense clusters.
+- **Blend**: Seamlessly mixes between long, swelling tones and short melodic motifs.
+- **Swell Duration**: Sets the base length of the drone notes.
+- **Melody Complexity**: Biases the selection of motifs towards simple steps or complex runs.
 
-Since this is a static site, you can run it in two ways:
+## Development
 
-1. **Directly**: Double-click `index.html` to open it in your browser.
-2. **Simple Server**:
+This project uses [Vite](https://vitejs.dev/) + [React](https://react.dev/).
+
+1. **Install dependencies**:
    ```bash
-   python3 -m http.server
+   npm install
    ```
-   Then visit `http://localhost:8000`.
+
+2. **Run development server**:
+   ```bash
+   npm run dev
+   ```
+   Visit `http://localhost:5173` (or the port shown in terminal).
+
+3. **Build for production**:
+   ```bash
+   npm run build
+   ```
