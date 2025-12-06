@@ -177,7 +177,8 @@ export class Musician {
     }
 
     playTone(settings) {
-        const t = this.audioCtx.currentTime;
+        // Add 50ms lookahead to accommodate mobile browser scheduling latency
+        const t = this.audioCtx.currentTime + 0.05;
         const baseDur = settings.swellDuration;
         const duration = baseDur + Math.random() * (baseDur * 0.5); 
         
@@ -226,7 +227,8 @@ export class Musician {
     }
 
     playMelody(settings) {
-        const t = this.audioCtx.currentTime;
+        // Add 50ms lookahead for mobile stability
+        const t = this.audioCtx.currentTime + 0.05;
         
         // Determine scale based on active progression step override or manual settings
         let rootFreq = ROOTS[settings.root || DEFAULT_ROOT];

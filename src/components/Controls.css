@@ -5,12 +5,16 @@
     gap: 15px;
     margin-top: 30px;
     width: 100%;
+    padding: 0 15px;
+    box-sizing: border-box;
 }
 
 .controls {
     display: flex;
     gap: 20px;
     align-items: center;
+    width: 100%;
+    justify-content: center;
 }
 
 .progression-status {
@@ -100,14 +104,48 @@ select option {
     color: #e6f1ff;
 }
 
-@media (max-width: 480px) {
+@media (max-width: 768px) {
+    .controls-wrapper {
+        margin-top: 20px;
+        gap: 12px;
+        padding: 0 10px;
+    }
+
+    .controls {
+        gap: 15px;
+    }
+
     button {
         padding: 12px 24px;
         font-size: 14px;
+        min-width: 100px;
     }
     
     .progression-status {
-        min-width: 150px;
+        min-width: auto;
+        width: 100%;
+        max-width: 300px;
         font-size: 0.8em;
+        padding: 6px 12px;
+        height: auto;
+        min-height: 2.5em;
+    }
+}
+
+@media (max-width: 480px) {
+    .controls-wrapper {
+        margin-top: 15px;
+        gap: 10px;
+    }
+
+    button {
+        padding: 10px 20px;
+        font-size: 13px;
+        min-width: 90px;
+    }
+    
+    .progression-status {
+        font-size: 0.75em;
+        padding: 5px 10px;
     }
 }

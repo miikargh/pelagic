@@ -10,33 +10,62 @@ body {
   place-items: center;
   min-width: 320px;
   min-height: 100vh;
-  overflow: hidden;
+  overflow-x: hidden;
+  overflow-y: auto;
 }
 
 #root {
   width: 100%;
-  height: 100vh;
+  min-height: 100vh;
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
-  overflow-y: auto; /* Allow scrolling on small screens if needed */
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+.app-header {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 100;
+  background: rgba(10, 25, 47, 0.95);
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid rgba(100, 255, 218, 0.2);
+  padding: 15px 20px;
 }
 
 h1 {
   font-weight: normal;
   letter-spacing: 2px;
-  margin-bottom: 10px;
+  margin: 0;
   text-align: center;
+}
+
+.app-main {
+  width: 100%;
+  padding-top: 80px;
+  padding-bottom: 40px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.app-footer {
+  width: 100%;
+  padding: 30px 20px;
+  margin-top: auto;
 }
 
 p.description {
   opacity: 0.7;
-  margin-bottom: 40px;
+  margin: 0;
   max-width: 600px;
   text-align: center;
   line-height: 1.5;
   padding: 0 20px;
+  margin: 0 auto;
 }
 
 .orchestra-container {
@@ -48,24 +77,43 @@ p.description {
 }
 
 @media (max-width: 768px) {
+  .app-header {
+    padding: 10px 15px;
+  }
+
   h1 {
     font-size: 1.5em;
-    margin-top: 20px;
+  }
+
+  .app-main {
+    padding-top: 70px;
+    padding-bottom: 20px;
   }
 
   p.description {
-    font-size: 0.9em;
-    margin-bottom: 20px;
+    font-size: 0.85em;
     padding: 0 15px;
   }
 
+  .app-footer {
+    padding: 20px 15px;
+  }
+
   .orchestra-container {
-    padding: 20px;
-    gap: 10px;
+    padding: 15px;
+    gap: 8px;
   }
 
   #root {
-    justify-content: flex-start; /* Top align content on mobile to allow scrolling */
-    padding-bottom: 40px;
+    padding: 0;
+  }
+
+    .app {
+    width: 100%;
+    max-width: 100%;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
   }
 }

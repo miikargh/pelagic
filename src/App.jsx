@@ -99,8 +99,20 @@ function App() {
             musiciansRef.current.forEach(m => m.setContext(audioCtxRef.current));
         }
 
+        // Mobile browser policy: resume explicitly and play silent buffer to unlock
         if (audioCtxRef.current.state === 'suspended') {
             audioCtxRef.current.resume();
+        }
+
+        // Play a silent buffer to verify/force audio unlock on iOS
+        try {
+            const buffer = audioCtxRef.current.createBuffer(1, 1, 22050);
+            const source = audioCtxRef.current.createBufferSource();
+            source.buffer = buffer;
+            source.connect(audioCtxRef.current.destination);
+            source.start(0);
+        } catch (e) {
+            console.warn("Audio unlock attempted", e);
         }
 
         setIsRunning(true);
@@ -153,29 +165,35 @@ function App() {
         <div className="app">
             <Background settings={settings} isRunning={isRunning} />
             
-            <h1>PELAGIC</h1>
-            <p className="description">
-                An aleatoric music experiment based on the "Tidal Orchestra" technique.
-                Musicians listen to their neighbors and play only when space allows, creating a natural, breathing soundscape.
-            </p>
+            <header className="app-header">
+                <h1>PELAGIC</h1>
+            </header>
 
-            <div id="orchestra" className="orchestra-container">
-                {musicianStates.map((playing, i) => (
-                    <Musician key={i} isPlaying={playing} />
-                ))}
-            </div>
+            <main className="app-main">
+                <div id="orchestra" className="orchestra-container">
+                    {musicianStates.map((playing, i) => (
+                        <Musician key={i} isPlaying={playing} />
+                    ))}
+                </div>
 
-            <Controls 
-                isRunning={isRunning}
-                onStart={startOrchestra}
-                onStop={stopOrchestra}
-                currentStepInfo={currentStepInfo}
-            />
+                <Controls 
+                    isRunning={isRunning}
+                    onStart={startOrchestra}
+                    onStop={stopOrchestra}
+                />
 
-            <ChaosPanel 
-                settings={settings} 
-                onSettingChange={setSettings} 
-            />
+                <ChaosPanel 
+                    settings={settings} 
+                    onSettingChange={setSettings} 
+                />
+            </main>
+
+            <footer className="app-footer">
+                <p className="description">
+                    An aleatoric music experiment based on the "Tidal Orchestra" technique.
+                    Musicians listen to their neighbors and play only when space allows, creating a natural, breathing soundscape.
+                </p>
+            </footer>
         </div>
     );
 }

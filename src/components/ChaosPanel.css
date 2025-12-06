@@ -5,8 +5,16 @@
     border-radius: 8px;
     background: rgba(10, 25, 47, 0.5);
     width: 100%;
-    max-width: 500px; /* Increased slightly to allow for better potential internal layout, though still constrained */
+    max-width: 500px;
     box-sizing: border-box;
+}
+
+@media (max-width: 768px) {
+    .chaos-panel {
+        margin: 15px 10px;
+        padding: 12px;
+        max-width: calc(100% - 20px);
+    }
 }
 
 .chaos-panel h3 {
@@ -138,13 +146,62 @@
     opacity: 0.5;
 }
 
-@media (max-width: 480px) {
-    .control-group-row {
-        flex-direction: column;
-        gap: 12px;
+@media (max-width: 768px) {
+    .chaos-panel h3 {
+        font-size: 0.9em;
+        margin-bottom: 10px;
     }
-    
+
     .preset-buttons {
         grid-template-columns: repeat(2, 1fr);
+        gap: 8px;
+    }
+
+    .preset-btn, .random-btn {
+        padding: 6px 10px;
+        font-size: 0.75em;
+    }
+
+    .control-group {
+        margin-bottom: 10px;
+    }
+
+    .control-group label {
+        font-size: 0.8em;
+    }
+
+    .control-group-row {
+        flex-direction: column;
+        gap: 10px;
+    }
+
+    .scale-select {
+        font-size: 0.8em;
+        padding: 6px;
+    }
+}
+
+@media (max-width: 480px) {
+    .chaos-panel {
+        margin: 10px 5px;
+        padding: 10px;
+    }
+
+    .preset-buttons {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 6px;
+    }
+
+    .preset-btn, .random-btn {
+        padding: 5px 8px;
+        font-size: 0.7em;
+    }
+
+    .control-group label {
+        font-size: 0.75em;
+    }
+
+    .control-group .labels {
+        font-size: 0.6em;
     }
 }
