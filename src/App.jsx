@@ -88,6 +88,23 @@ function App() {
         };
     }, []);
 
+    // Unlock audio on any user interaction
+    useEffect(() => {
+        const unlockAudio = () => {
+            if (audioCtxRef.current && audioCtxRef.current.state === 'suspended') {
+                audioCtxRef.current.resume().catch(e => console.warn("Auto-resume failed", e));
+            }
+        };
+        
+        document.addEventListener('touchstart', unlockAudio, { passive: true });
+        document.addEventListener('click', unlockAudio, { passive: true });
+        
+        return () => {
+            document.removeEventListener('touchstart', unlockAudio);
+            document.removeEventListener('click', unlockAudio);
+        };
+    }, []);
+
     const startOrchestra = () => {
         if (!audioCtxRef.current) {
             const AudioContext = window.AudioContext || window.webkitAudioContext;
@@ -100,16 +117,17 @@ function App() {
         }
 
         // Mobile browser policy: resume explicitly and play silent buffer to unlock
-        if (audioCtxRef.current.state === 'suspended') {
-            audioCtxRef.current.resume();
+        const ctx = audioCtxRef.current;
+        if (ctx.state === 'suspended') {
+            ctx.resume().then(() => console.log("Audio resumed")).catch(console.warn);
         }
 
         // Play a silent buffer to verify/force audio unlock on iOS
         try {
-            const buffer = audioCtxRef.current.createBuffer(1, 1, 22050);
-            const source = audioCtxRef.current.createBufferSource();
+            const buffer = ctx.createBuffer(1, 1, ctx.sampleRate);
+            const source = ctx.createBufferSource();
             source.buffer = buffer;
-            source.connect(audioCtxRef.current.destination);
+            source.connect(ctx.destination);
             source.start(0);
         } catch (e) {
             console.warn("Audio unlock attempted", e);
